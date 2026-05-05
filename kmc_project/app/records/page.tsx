@@ -16,6 +16,7 @@ interface ActivityRecord {
 export default function RecordsPage() {
   const [loading, setLoading] = useState(true);
   const [records, setRecords] = useState<ActivityRecord[]>([]);
+  const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
 
   useEffect(() => {
     async function fetchData() {
@@ -150,7 +151,35 @@ export default function RecordsPage() {
                   }`}>
                     {record.category}
                   </span>
-                  <button className="text-gray-400 hover:text-primary"><span className="material-symbols-outlined text-sm">more_vert</span></button>
+                  <div className="relative">
+                    <button 
+                      onClick={() => setActiveDropdown(activeDropdown === record.id ? null : record.id)}
+                      className="text-gray-400 hover:text-primary transition-colors"
+                    >
+                      <span className="material-symbols-outlined text-sm">more_vert</span>
+                    </button>
+                    {activeDropdown === record.id && (
+                      <div className="absolute right-0 top-full mt-2 w-48 bg-white border border-gray-200 shadow-xl z-50 rounded-lg overflow-hidden animate-in fade-in slide-in-from-top-1 duration-200">
+                        <a 
+                          href={`/activities?tab=${record.type === 'ORGANIZED' ? 'organized' : record.type === 'ATTENDED' ? 'attended' : 'support'}&editId=${record.id}`}
+                          className="flex items-center gap-3 px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                        >
+                          <span className="material-symbols-outlined text-sm text-blue-600">edit</span>
+                          Edit Record
+                        </a>
+                        {(record as any).evidence_url && (
+                          <a 
+                            href={(record as any).evidence_url} 
+                            target="_blank"
+                            className="flex items-center gap-3 px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 border-t border-gray-100 transition-colors"
+                          >
+                            <span className="material-symbols-outlined text-sm text-green-600">link</span>
+                            View Related Files
+                          </a>
+                        )}
+                      </div>
+                    )}
+                  </div>
                 </div>
                 <h4 className="font-semibold text-primary mb-1">{record.title || "Untitled"}</h4>
                 <div className="flex flex-col gap-1 text-xs text-gray-600 mt-2">
@@ -203,7 +232,44 @@ export default function RecordsPage() {
                     {record.faculty || "Unknown Faculty"}
                   </td>
                   <td className="px-md py-4 text-right">
-                    <button className="text-gray-400 hover:text-primary transition-colors"><span className="material-symbols-outlined">more_vert</span></button>
+                    <div className="relative inline-block text-left">
+                      <button 
+                        onClick={() => setActiveDropdown(activeDropdown === record.id ? null : record.id)}
+                        className="text-gray-400 hover:text-primary transition-colors p-2 rounded-full hover:bg-gray-100"
+                      >
+                        <span className="material-symbols-outlined">more_vert</span>
+                      </button>
+                      
+                      {activeDropdown === record.id && (
+                        <>
+                          <div className="fixed inset-0 z-40" onClick={() => setActiveDropdown(null)}></div>
+                          <div className="absolute right-0 top-full mt-1 w-52 bg-white border border-gray-200 shadow-2xl z-50 rounded-xl overflow-hidden animate-in fade-in zoom-in-95 duration-200 origin-top-right">
+                            <a 
+                              href={`/activities?tab=${record.type === 'ORGANIZED' ? 'organized' : record.type === 'ATTENDED' ? 'attended' : 'support'}&editId=${record.id}`}
+                              className="flex items-center gap-3 px-5 py-4 text-sm font-bold text-gray-700 hover:bg-gray-50 transition-colors border-b border-gray-100"
+                            >
+                              <span className="material-symbols-outlined text-blue-600">edit</span>
+                              Edit Activity
+                            </a>
+                            {(record as any).evidence_url ? (
+                              <a 
+                                href={(record as any).evidence_url} 
+                                target="_blank"
+                                className="flex items-center gap-3 px-5 py-4 text-sm font-bold text-gray-700 hover:bg-gray-50 transition-colors"
+                              >
+                                <span className="material-symbols-outlined text-green-600">cloud_download</span>
+                                Supporting Files
+                              </a>
+                            ) : (
+                              <span className="flex items-center gap-3 px-5 py-4 text-sm font-bold text-gray-300 cursor-not-allowed">
+                                <span className="material-symbols-outlined">block</span>
+                                No Files Attached
+                              </span>
+                            )}
+                          </div>
+                        </>
+                      )}
+                    </div>
                   </td>
                 </tr>
               ))}

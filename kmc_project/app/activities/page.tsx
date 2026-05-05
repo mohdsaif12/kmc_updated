@@ -1,12 +1,32 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
+import { useSearchParams } from 'next/navigation';
 import { supabase } from "@/lib/supabase";
 
-export default function ActivitiesPage() {
+const DEPARTMENTS = [
+  "Faculty of Arts & Humanities",
+  "Faculty of Engineering & Technology",
+  "Faculty of Social Science",
+  "Faculty of Science",
+  "Faculty of Legal Studies",
+  "Faculty of Commerce & Management",
+  "Faculty of Pharmacy"
+];
+
+function ActivitiesContent() {
   const [activeTab, setActiveTab] = useState("organized");
+  const searchParams = useSearchParams();
+  const [initialEditId, setInitialEditId] = useState<string | null>(null);
+
+  useEffect(() => {
+    const tab = searchParams.get('tab');
+    const editId = searchParams.get('editId');
+    if (tab) setActiveTab(tab);
+    if (editId) setInitialEditId(editId);
+  }, [searchParams]);
+
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
   // State for Organized
   const [organizedEntries, setOrganizedEntries] = useState<any[]>([]);
@@ -14,6 +34,8 @@ export default function ActivitiesPage() {
   const [attendedEntries, setAttendedEntries] = useState<any[]>([]);
   // State for Student Support
   const [supportEntries, setSupportEntries] = useState<any[]>([]);
+
+  const [error, setError] = useState<string | null>(null);
 
   // Fetch all data on load
   useEffect(() => {
@@ -24,10 +46,11 @@ export default function ActivitiesPage() {
     setLoading(true);
     setError(null);
     try {
+      console.log("Fetching data from Supabase...");
       const { data: organized, error: error1 } = await supabase.from('activities_organized').select('*').order('created_at', { ascending: false });
       const { data: attended, error: error2 } = await supabase.from('activities_attended').select('*').order('created_at', { ascending: false });
       const { data: support, error: error3 } = await supabase.from('student_support_activities').select('*').order('created_at', { ascending: false });
-      
+
       if (error1 || error2 || error3) {
         throw new Error(error1?.message || error2?.message || error3?.message || "Database error");
       }
@@ -36,6 +59,7 @@ export default function ActivitiesPage() {
       if (attended) setAttendedEntries(attended);
       if (support) setSupportEntries(support);
     } catch (err: any) {
+      console.error("Supabase Fetch Error:", err);
       setError(err.message);
     } finally {
       setLoading(false);
@@ -52,221 +76,738 @@ export default function ActivitiesPage() {
         </div>
         <div className="flex items-center gap-4">
           {loading && <div className="text-[#B23B25] font-bold animate-pulse">Syncing...</div>}
+          {error && (
+            <button
+              onClick={fetchData}
+              className="bg-red-50 text-red-600 px-4 py-2 rounded-lg text-sm font-bold border border-red-200 hover:bg-red-100 transition-colors"
+            >
+              Retry Connection
+            </button>
+          )}
         </div>
       </div>
 
       {error && (
         <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded-r-xl">
-          <p className="text-red-700 font-bold">Database Error</p>
+          <p className="text-red-700 font-bold">Database Connection Error</p>
           <p className="text-red-600 text-sm">{error}</p>
+          <p className="text-xs text-red-400 mt-2 italic">Check if your Supabase URL and Anon Key are correct in .env.local and that you've run the SQL code to create tables.</p>
         </div>
       )}
 
       {/* Tabs Navigation */}
-      <div className="overflow-x-auto pb-2 -mx-6 px-6 md:mx-0 md:px-0">
-        <div className="flex gap-2 p-1 bg-gray-100 rounded-2xl w-fit border border-gray-200 whitespace-nowrap">
-          <button 
-            onClick={() => setActiveTab("organized")}
-            className={`px-6 md:px-8 py-3 rounded-xl font-bold text-xs md:text-sm transition-all ${activeTab === 'organized' ? 'bg-[#B23B25] text-white shadow-lg' : 'text-gray-600 hover:bg-white'}`}
-          >
-            1. Activities Organized
-          </button>
-          <button 
-            onClick={() => setActiveTab("attended")}
-            className={`px-6 md:px-8 py-3 rounded-xl font-bold text-xs md:text-sm transition-all ${activeTab === 'attended' ? 'bg-[#B23B25] text-white shadow-lg' : 'text-gray-600 hover:bg-white'}`}
-          >
-            2. Activities Attended
-          </button>
-          <button 
-            onClick={() => setActiveTab("support")}
-            className={`px-6 md:px-8 py-3 rounded-xl font-bold text-xs md:text-sm transition-all ${activeTab === 'support' ? 'bg-[#B23B25] text-white shadow-lg' : 'text-gray-600 hover:bg-white'}`}
-          >
-            3. Student Support
-          </button>
-        </div>
+      <div className="flex flex-wrap gap-2 p-1 bg-gray-100 rounded-2xl w-fit border border-gray-200">
+        <button
+          onClick={() => setActiveTab("organized")}
+          className={`px-8 py-3 rounded-xl font-bold text-sm transition-all ${activeTab === 'organized' ? 'bg-[#B23B25] text-white shadow-lg' : 'text-gray-600 hover:bg-white'}`}
+        >
+          1. Activities Organized
+        </button>
+        <button
+          onClick={() => setActiveTab("attended")}
+          className={`px-8 py-3 rounded-xl font-bold text-sm transition-all ${activeTab === 'attended' ? 'bg-[#B23B25] text-white shadow-lg' : 'text-gray-600 hover:bg-white'}`}
+        >
+          2. Activities Attended
+        </button>
+        <button
+          onClick={() => setActiveTab("support")}
+          className={`px-8 py-3 rounded-xl font-bold text-sm transition-all ${activeTab === 'support' ? 'bg-[#B23B25] text-white shadow-lg' : 'text-gray-600 hover:bg-white'}`}
+        >
+          3. Student Support
+        </button>
       </div>
 
       {/* Dynamic Content */}
       <div className="space-y-12">
         {activeTab === "organized" && (
-          <OrganizedModule entries={organizedEntries} onRefresh={fetchData} />
+          <OrganizedModule entries={organizedEntries} onRefresh={fetchData} initialEditId={initialEditId} />
         )}
         {activeTab === "attended" && (
-          <AttendedModule entries={attendedEntries} onRefresh={fetchData} />
+          <AttendedModule entries={attendedEntries} onRefresh={fetchData} initialEditId={initialEditId} />
         )}
         {activeTab === "support" && (
-          <SupportModule entries={supportEntries} onRefresh={fetchData} />
+          <SupportModule entries={supportEntries} onRefresh={fetchData} initialEditId={initialEditId} />
         )}
       </div>
     </div>
   );
 }
 
-// --- MODULE 1: ORGANIZED ---
-function OrganizedModule({ entries, onRefresh }: any) {
-  const [form, setForm] = useState({ convener: "", title: "", agency: "", startDate: "", endDate: "", participants: "", theme: "" });
-  const [saving, setSaving] = useState(false);
+export default function ActivitiesPage() {
+  return (
+    <Suspense fallback={<div className="p-20 text-center font-bold text-[#B23B25]">Loading Dashboard...</div>}>
+      <ActivitiesContent />
+    </Suspense>
+  );
+}
 
-  const handleSubmit = async (e: React.FormEvent) => {
+// --- MODULE 1: ORGANIZED ---
+function OrganizedModule({ entries, onRefresh, initialEditId }: any) {
+  const [form, setForm] = useState({ 
+    convener: "", 
+    title: "", 
+    agency: "", 
+    startDate: "", 
+    endDate: "", 
+    participants: "", 
+    theme: "",
+    department: "",
+    file: null as File | null
+  });
+  const [saving, setSaving] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (initialEditId && entries.length > 0) {
+      const entry = entries.find((e: any) => e.id === initialEditId);
+      if (entry) handleEdit(entry);
+    }
+  }, [initialEditId, entries]);
+
+  const handleSubmit = async (e: any) => {
     e.preventDefault();
     setSaving(true);
-    const { error } = await supabase.from('activities_organized').insert([{
-      convener_name: form.convener,
-      program_title: form.title,
-      sponsoring_agency: form.agency,
-      start_date: form.startDate,
-      end_date: form.endDate,
-      participants_count: parseInt(form.participants),
-      theme: form.theme
-    }]);
 
-    if (!error) {
-      setForm({ convener: "", title: "", agency: "", startDate: "", endDate: "", participants: "", theme: "" });
+    try {
+      let fileUrl = form.file ? "" : (entries.find(e => e.id === editingId)?.evidence_url || "");
+      
+      if (form.file) {
+        const fileName = `${Date.now()}-${form.file.name}`;
+        const { data: uploadData, error: uploadError } = await supabase.storage
+          .from('activity-evidences')
+          .upload(fileName, form.file);
+
+        if (uploadError) throw uploadError;
+
+        const { data: { publicUrl } } = supabase.storage
+          .from('activity-evidences')
+          .getPublicUrl(fileName);
+        
+        fileUrl = publicUrl;
+      }
+
+      const recordData = {
+        convener_name: form.convener,
+        program_title: form.title,
+        sponsoring_agency: form.agency,
+        start_date: form.startDate,
+        end_date: form.endDate,
+        participants_count: parseInt(form.participants),
+        theme: form.theme,
+        department: form.department,
+        evidence_url: fileUrl
+      };
+
+      let error;
+      if (editingId) {
+        const { error: updateError } = await supabase
+          .from('activities_organized')
+          .update([recordData])
+          .eq('id', editingId);
+        error = updateError;
+      } else {
+        const { error: insertError } = await supabase
+          .from('activities_organized')
+          .insert([recordData]);
+        error = insertError;
+      }
+
+      if (error) throw error;
+
+      setForm({ convener: "", title: "", agency: "", startDate: "", endDate: "", participants: "", theme: "", department: "", file: null });
+      setEditingId(null);
       onRefresh();
-      alert("Successfully saved to database!");
-    } else {
-      alert("Error saving: " + error.message);
+      alert(editingId ? "Successfully updated!" : "Successfully saved!");
+    } catch (err: any) {
+      alert("Error: " + err.message);
+    } finally {
+      setSaving(false);
     }
-    setSaving(false);
+  };
+
+  const handleEdit = (entry: any) => {
+    setEditingId(entry.id);
+    setForm({
+      convener: entry.convener_name || "",
+      title: entry.program_title || "",
+      agency: entry.sponsoring_agency || "",
+      startDate: entry.start_date || "",
+      endDate: entry.end_date || "",
+      participants: entry.participants_count?.toString() || "",
+      theme: entry.theme || "",
+      department: entry.department || "",
+      file: null
+    });
   };
 
   return (
     <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 space-y-8">
       <div className="bg-white rounded-3xl shadow-xl border border-gray-100 overflow-hidden">
         <div className="bg-[#B23B25] px-8 py-5 flex justify-between items-center">
-          <h3 className="text-white font-bold text-xl">New Organized Activity</h3>
+          <h3 className="text-white font-bold text-xl">{editingId ? 'Edit Activity' : 'New Organized Activity'}</h3>
+          {editingId && (
+            <button 
+              onClick={() => { setEditingId(null); setForm({ convener: "", title: "", agency: "", startDate: "", endDate: "", participants: "", theme: "", department: "", file: null }); }}
+              className="text-white/80 hover:text-white text-sm font-bold flex items-center gap-1"
+            >
+              <span className="material-symbols-outlined text-sm">close</span>
+              CANCEL
+            </button>
+          )}
         </div>
         <form onSubmit={handleSubmit} className="p-8 grid grid-cols-1 md:grid-cols-2 gap-6">
-          <FormField label="Convener / Coordinator" value={form.convener} onChange={(v: string) => setForm({...form, convener: v})} />
-          <FormField label="Programme Title" value={form.title} onChange={(v: string) => setForm({...form, title: v})} />
-          <FormField label="Sponsoring Agency & Funds" value={form.agency} onChange={(v: string) => setForm({...form, agency: v})} />
+          <SelectField label="Department" value={form.department} onChange={(v) => setForm({ ...form, department: v })} options={DEPARTMENTS} />
+          <FormField label="Convener / Coordinator" value={form.convener} onChange={(v) => setForm({ ...form, convener: v })} />
+          <FormField label="Programme Title" value={form.title} onChange={(v) => setForm({ ...form, title: v })} />
+          <FormField label="Sponsoring Agency & Funds" value={form.agency} onChange={(v) => setForm({ ...form, agency: v })} />
           <div className="grid grid-cols-2 gap-4">
-             <FormField label="Start Date" type="date" value={form.startDate} onChange={(v: string) => setForm({...form, startDate: v})} />
-             <FormField label="End Date" type="date" value={form.endDate} onChange={(v: string) => setForm({...form, endDate: v})} />
+            <FormField label="Start Date" type="date" value={form.startDate} onChange={(v) => setForm({ ...form, startDate: v })} />
+            <FormField label="End Date" type="date" value={form.endDate} onChange={(v) => setForm({ ...form, endDate: v })} />
           </div>
-          <FormField label="Participants" type="number" value={form.participants} onChange={(v: string) => setForm({...form, participants: v})} />
-          <FormField label="Themes (SDG / AI)" value={form.theme} onChange={(v: string) => setForm({...form, theme: v})} />
-          <SubmitButton saving={saving} />
+          <FormField label="Participants" type="number" value={form.participants} onChange={(v) => setForm({ ...form, participants: v })} />
+          <FormField label="Themes (SDG / AI)" value={form.theme} onChange={(v) => setForm({ ...form, theme: v })} />
+          <div className="md:col-span-2">
+            <FileUpload label={editingId ? "Replace Related Files (Optional)" : "Upload Related Files (Image/PDF - Max 5MB)"} onChange={(f) => setForm({ ...form, file: f })} />
+          </div>
+          <SubmitButton saving={saving} label={editingId ? 'Update Record' : 'Add Record to Dashboard'} />
         </form>
       </div>
 
-      <Table 
-        headers={["Title", "Convener", "Agency", "Start Date", "End Date", "Participants", "Themes"]}
-        data={entries.map((e: any) => [e.program_title, e.convener_name, e.sponsoring_agency, e.start_date, e.end_date, e.participants_count, e.theme])}
-      />
+      <div className="bg-white rounded-3xl shadow-xl border border-gray-100 overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full text-left border-collapse">
+            <thead>
+              <tr className="bg-gray-50 border-b border-gray-200">
+                {["Title", "Department", "Convener", "Files", "Agency", "Date Range", "Actions"].map((h) => (
+                  <th key={h} className="px-6 py-5 text-xs font-black text-gray-400 uppercase tracking-widest">{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-100">
+              {entries.map((e: any) => (
+                <tr key={e.id} className="hover:bg-gray-50 transition-colors">
+                  {editingId === e.id ? (
+                    <td colSpan={7} className="p-0">
+                      <div className="bg-blue-50/50 p-6 grid grid-cols-1 md:grid-cols-3 gap-4 animate-in fade-in zoom-in-95 duration-200">
+                        <div className="md:col-span-3 flex justify-between items-center mb-2">
+                          <span className="text-blue-600 font-bold text-sm flex items-center gap-1">
+                            <span className="material-symbols-outlined text-sm">edit</span> EDITING RECORD
+                          </span>
+                          <button onClick={() => setEditingId(null)} className="text-gray-400 hover:text-gray-600">
+                            <span className="material-symbols-outlined">close</span>
+                          </button>
+                        </div>
+                        <SelectField label="Department" value={form.department} onChange={(v: any) => setForm({ ...form, department: v })} options={DEPARTMENTS} />
+                        <FormField label="Convener" value={form.convener} onChange={(v: any) => setForm({ ...form, convener: v })} />
+                        <FormField label="Title" value={form.title} onChange={(v: any) => setForm({ ...form, title: v })} />
+                        <FormField label="Agency" value={form.agency} onChange={(v: any) => setForm({ ...form, agency: v })} />
+                        <FormField label="Start" type="date" value={form.startDate} onChange={(v: any) => setForm({ ...form, startDate: v })} />
+                        <FormField label="End" type="date" value={form.endDate} onChange={(v: any) => setForm({ ...form, endDate: v })} />
+                        <div className="md:col-span-2">
+                          <FileUpload label="Change File (Optional)" onChange={(f) => setForm({ ...form, file: f })} />
+                        </div>
+                        <div className="flex items-end pb-1">
+                          <button 
+                            disabled={saving}
+                            onClick={handleSubmit}
+                            className="w-full bg-[#B23B25] text-white py-4 rounded-xl font-bold shadow-lg hover:bg-[#800000] transition-all"
+                          >
+                            {saving ? 'Saving...' : 'SAVE CHANGES'}
+                          </button>
+                        </div>
+                      </div>
+                    </td>
+                  ) : (
+                    <>
+                      <td className="px-6 py-5 text-sm font-bold text-gray-900">{e.program_title}</td>
+                      <td className="px-6 py-5 text-sm text-gray-600">{e.department || '-'}</td>
+                      <td className="px-6 py-5 text-sm text-gray-600">{e.convener_name}</td>
+                      <td className="px-6 py-5 text-sm">
+                        {e.evidence_url ? (
+                          <a href={e.evidence_url} target="_blank" className="text-[#B23B25] hover:underline font-bold flex items-center gap-1">
+                            <span className="material-symbols-outlined text-sm">link</span> VIEW
+                          </a>
+                        ) : <span className="text-gray-300">NONE</span>}
+                      </td>
+                      <td className="px-6 py-5 text-sm text-gray-600">{e.sponsoring_agency}</td>
+                      <td className="px-6 py-5 text-xs text-gray-500 font-mono">
+                        {e.start_date} <br/> {e.end_date}
+                      </td>
+                      <td className="px-6 py-5">
+                        <button onClick={() => handleEdit(e)} className="p-2 rounded-lg hover:bg-gray-100 text-[#B23B25] transition-colors">
+                          <span className="material-symbols-outlined">edit</span>
+                        </button>
+                      </td>
+                    </>
+                  )}
+                </tr>
+              ))}
+              {entries.length === 0 && (
+                <tr><td colSpan={7} className="px-6 py-20 text-center text-gray-400 italic">No records found.</td></tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
     </div>
   );
 }
 
 // --- MODULE 2: ATTENDED ---
-function AttendedModule({ entries, onRefresh }: any) {
-  const [form, setForm] = useState({ teacher: "", title: "", institution: "", startDate: "", endDate: "" });
+function AttendedModule({ entries, onRefresh, initialEditId }: any) {
+  const [form, setForm] = useState({ 
+    teacher: "", 
+    title: "", 
+    institution: "", 
+    startDate: "", 
+    endDate: "",
+    department: "",
+    file: null as File | null
+  });
   const [saving, setSaving] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  useEffect(() => {
+    if (initialEditId && entries.length > 0) {
+      const entry = entries.find((e: any) => e.id === initialEditId);
+      if (entry) handleEdit(entry);
+    }
+  }, [initialEditId, entries]);
+
+  const handleSubmit = async (e: any) => {
     e.preventDefault();
     setSaving(true);
-    const { error } = await supabase.from('activities_attended').insert([{
-      teacher_name: form.teacher,
-      program_title: form.title,
-      organizing_institution: form.institution,
-      start_date: form.startDate,
-      end_date: form.endDate
-    }]);
+    try {
+      let fileUrl = form.file ? "" : (entries.find(e => e.id === editingId)?.evidence_url || "");
+      
+      if (form.file) {
+        const fileName = `${Date.now()}-${form.file.name}`;
+        const { data: uploadData, error: uploadError } = await supabase.storage
+          .from('activity-evidences')
+          .upload(fileName, form.file);
 
-    if (!error) {
-      setForm({ teacher: "", title: "", institution: "", startDate: "", endDate: "" });
+        if (uploadError) throw uploadError;
+
+        const { data: { publicUrl } } = supabase.storage
+          .from('activity-evidences')
+          .getPublicUrl(fileName);
+        
+        fileUrl = publicUrl;
+      }
+
+      const recordData = {
+        teacher_name: form.teacher,
+        program_title: form.title,
+        organizing_institution: form.institution,
+        start_date: form.startDate,
+        end_date: form.endDate,
+        department: form.department,
+        evidence_url: fileUrl
+      };
+
+      let error;
+      if (editingId) {
+        const { error: updateError } = await supabase
+          .from('activities_attended')
+          .update([recordData])
+          .eq('id', editingId);
+        error = updateError;
+      } else {
+        const { error: insertError } = await supabase
+          .from('activities_attended')
+          .insert([recordData]);
+        error = insertError;
+      }
+
+      if (error) throw error;
+
+      setForm({ teacher: "", title: "", institution: "", startDate: "", endDate: "", department: "", file: null });
+      setEditingId(null);
       onRefresh();
-      alert("Successfully saved to database!");
-    } else {
-      alert("Error saving: " + error.message);
+      alert(editingId ? "Successfully updated!" : "Successfully saved!");
+    } catch (err: any) {
+      alert("Error: " + err.message);
+    } finally {
+      setSaving(false);
     }
-    setSaving(false);
+  };
+
+  const handleEdit = (entry: any) => {
+    setEditingId(entry.id);
+    setForm({
+      teacher: entry.teacher_name || "",
+      title: entry.program_title || "",
+      institution: entry.organizing_institution || "",
+      startDate: entry.start_date || "",
+      endDate: entry.end_date || "",
+      department: entry.department || "",
+      file: null
+    });
   };
 
   return (
     <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 space-y-8">
       <div className="bg-white rounded-3xl shadow-xl border border-gray-100 overflow-hidden">
         <div className="bg-[#B23B25] px-8 py-5 flex justify-between items-center">
-          <h3 className="text-white font-bold text-xl">New Attended Activity</h3>
+          <h3 className="text-white font-bold text-xl">{editingId ? 'Edit Activity' : 'New Attended Activity'}</h3>
+          {editingId && (
+            <button 
+              onClick={() => { setEditingId(null); setForm({ teacher: "", title: "", institution: "", startDate: "", endDate: "", department: "", file: null }); }}
+              className="text-white/80 hover:text-white text-sm font-bold flex items-center gap-1"
+            >
+              <span className="material-symbols-outlined text-sm">close</span>
+              CANCEL
+            </button>
+          )}
         </div>
         <form onSubmit={handleSubmit} className="p-8 grid grid-cols-1 md:grid-cols-2 gap-6">
-          <FormField label="Name of Teacher" value={form.teacher} onChange={(v: string) => setForm({...form, teacher: v})} />
-          <FormField label="Title of Programme" value={form.title} onChange={(v: string) => setForm({...form, title: v})} />
-          <FormField label="Organizing Institution" value={form.institution} onChange={(v: string) => setForm({...form, institution: v})} />
+          <SelectField label="Department" value={form.department} onChange={(v) => setForm({ ...form, department: v })} options={DEPARTMENTS} />
+          <FormField label="Name of Teacher" value={form.teacher} onChange={(v) => setForm({ ...form, teacher: v })} />
+          <FormField label="Title of Programme" value={form.title} onChange={(v) => setForm({ ...form, title: v })} />
+          <FormField label="Organizing Institution" value={form.institution} onChange={(v) => setForm({ ...form, institution: v })} />
           <div className="grid grid-cols-2 gap-4">
-             <FormField label="Start Date" type="date" value={form.startDate} onChange={(v: string) => setForm({...form, startDate: v})} />
-             <FormField label="End Date" type="date" value={form.endDate} onChange={(v: string) => setForm({...form, endDate: v})} />
+            <FormField label="Start Date" type="date" value={form.startDate} onChange={(v) => setForm({ ...form, startDate: v })} />
+            <FormField label="End Date" type="date" value={form.endDate} onChange={(v) => setForm({ ...form, endDate: v })} />
           </div>
-          <SubmitButton saving={saving} />
+          <div className="md:col-span-2">
+            <FileUpload label={editingId ? "Replace Related Files (Optional)" : "Upload Related Files (Image/PDF - Max 5MB)"} onChange={(f) => setForm({ ...form, file: f })} />
+          </div>
+          <SubmitButton saving={saving} label={editingId ? 'Update Record' : 'Add Record to Dashboard'} />
         </form>
       </div>
 
-      <Table 
-        headers={["Programme Title", "Teacher Name", "Institution", "Start Date", "End Date"]}
-        data={entries.map((e: any) => [e.program_title, e.teacher_name, e.organizing_institution, e.start_date, e.end_date])}
-      />
+      <div className="bg-white rounded-3xl shadow-xl border border-gray-100 overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full text-left border-collapse">
+            <thead>
+              <tr className="bg-gray-50 border-b border-gray-200">
+                {["Title", "Department", "Teacher", "Files", "Institution", "Date Range", "Actions"].map((h) => (
+                  <th key={h} className="px-6 py-5 text-xs font-black text-gray-400 uppercase tracking-widest">{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-100">
+              {entries.map((e: any) => (
+                <tr key={e.id} className="hover:bg-gray-50 transition-colors">
+                  {editingId === e.id ? (
+                    <td colSpan={7} className="p-0">
+                      <div className="bg-blue-50/50 p-6 grid grid-cols-1 md:grid-cols-3 gap-4 animate-in fade-in zoom-in-95 duration-200">
+                        <div className="md:col-span-3 flex justify-between items-center mb-2">
+                          <span className="text-blue-600 font-bold text-sm flex items-center gap-1">
+                            <span className="material-symbols-outlined text-sm">edit</span> EDITING RECORD
+                          </span>
+                          <button onClick={() => setEditingId(null)} className="text-gray-400 hover:text-gray-600">
+                            <span className="material-symbols-outlined">close</span>
+                          </button>
+                        </div>
+                        <SelectField label="Department" value={form.department} onChange={(v: any) => setForm({ ...form, department: v })} options={DEPARTMENTS} />
+                        <FormField label="Teacher" value={form.teacher} onChange={(v: any) => setForm({ ...form, teacher: v })} />
+                        <FormField label="Title" value={form.title} onChange={(v: any) => setForm({ ...form, title: v })} />
+                        <FormField label="Institution" value={form.institution} onChange={(v: any) => setForm({ ...form, institution: v })} />
+                        <FormField label="Start" type="date" value={form.startDate} onChange={(v: any) => setForm({ ...form, startDate: v })} />
+                        <FormField label="End" type="date" value={form.endDate} onChange={(v: any) => setForm({ ...form, endDate: v })} />
+                        <div className="md:col-span-2">
+                          <FileUpload label="Change File (Optional)" onChange={(f) => setForm({ ...form, file: f })} />
+                        </div>
+                        <div className="flex items-end pb-1">
+                          <button 
+                            disabled={saving}
+                            onClick={handleSubmit}
+                            className="w-full bg-[#B23B25] text-white py-4 rounded-xl font-bold shadow-lg hover:bg-[#800000] transition-all"
+                          >
+                            {saving ? 'Saving...' : 'SAVE CHANGES'}
+                          </button>
+                        </div>
+                      </div>
+                    </td>
+                  ) : (
+                    <>
+                      <td className="px-6 py-5 text-sm font-bold text-gray-900">{e.program_title}</td>
+                      <td className="px-6 py-5 text-sm text-gray-600">{e.department || '-'}</td>
+                      <td className="px-6 py-5 text-sm text-gray-600">{e.teacher_name}</td>
+                      <td className="px-6 py-5 text-sm">
+                        {e.evidence_url ? (
+                          <a href={e.evidence_url} target="_blank" className="text-[#B23B25] hover:underline font-bold flex items-center gap-1">
+                            <span className="material-symbols-outlined text-sm">link</span> VIEW
+                          </a>
+                        ) : <span className="text-gray-300">NONE</span>}
+                      </td>
+                      <td className="px-6 py-5 text-sm text-gray-600">{e.organizing_institution}</td>
+                      <td className="px-6 py-5 text-xs text-gray-500 font-mono">
+                        {e.start_date} <br/> {e.end_date}
+                      </td>
+                      <td className="px-6 py-5">
+                        <button onClick={() => handleEdit(e)} className="p-2 rounded-lg hover:bg-gray-100 text-[#B23B25] transition-colors">
+                          <span className="material-symbols-outlined">edit</span>
+                        </button>
+                      </td>
+                    </>
+                  )}
+                </tr>
+              ))}
+              {entries.length === 0 && (
+                <tr><td colSpan={7} className="px-6 py-20 text-center text-gray-400 italic">No records found.</td></tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
     </div>
   );
 }
 
 // --- MODULE 3: STUDENT SUPPORT ---
-function SupportModule({ entries, onRefresh }: any) {
-  const [form, setForm] = useState({ activity: "", purpose: "", coordinator: "", funds: "", students: "" });
+function SupportModule({ entries, onRefresh, initialEditId }: any) {
+  const [form, setForm] = useState({ 
+    activity: "", 
+    purpose: "", 
+    coordinator: "", 
+    funds: "", 
+    students: "",
+    department: "",
+    file: null as File | null
+  });
   const [saving, setSaving] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  useEffect(() => {
+    if (initialEditId && entries.length > 0) {
+      const entry = entries.find((e: any) => e.id === initialEditId);
+      if (entry) handleEdit(entry);
+    }
+  }, [initialEditId, entries]);
+
+  const handleSubmit = async (e: any) => {
     e.preventDefault();
     setSaving(true);
-    const { error } = await supabase.from('student_support_activities').insert([{
-      activity_name: form.activity,
-      purpose: form.purpose,
-      coordinator_name: form.coordinator,
-      funds_utilized: form.funds,
-      students_engaged: parseInt(form.students)
-    }]);
+    try {
+      let fileUrl = form.file ? "" : (entries.find(e => e.id === editingId)?.evidence_url || "");
+      
+      if (form.file) {
+        const fileName = `${Date.now()}-${form.file.name}`;
+        const { data: uploadData, error: uploadError } = await supabase.storage
+          .from('activity-evidences')
+          .upload(fileName, form.file);
 
-    if (!error) {
-      setForm({ activity: "", purpose: "", coordinator: "", funds: "", students: "" });
+        if (uploadError) throw uploadError;
+
+        const { data: { publicUrl } } = supabase.storage
+          .from('activity-evidences')
+          .getPublicUrl(fileName);
+        
+        fileUrl = publicUrl;
+      }
+
+      const recordData = {
+        activity_name: form.activity,
+        purpose: form.purpose,
+        coordinator_name: form.coordinator,
+        funds_utilized: form.funds,
+        students_engaged: parseInt(form.students),
+        department: form.department,
+        evidence_url: fileUrl
+      };
+
+      let error;
+      if (editingId) {
+        const { error: updateError } = await supabase
+          .from('student_support_activities')
+          .update([recordData])
+          .eq('id', editingId);
+        error = updateError;
+      } else {
+        const { error: insertError } = await supabase
+          .from('student_support_activities')
+          .insert([recordData]);
+        error = insertError;
+      }
+
+      if (error) throw error;
+
+      setForm({ activity: "", purpose: "", coordinator: "", funds: "", students: "", department: "" , file: null });
+      setEditingId(null);
       onRefresh();
-      alert("Successfully saved to database!");
-    } else {
-      alert("Error saving: " + error.message);
+      alert(editingId ? "Successfully updated!" : "Successfully saved!");
+    } catch (err: any) {
+      alert("Error: " + err.message);
+    } finally {
+      setSaving(false);
     }
-    setSaving(false);
+  };
+
+  const handleEdit = (entry: any) => {
+    setEditingId(entry.id);
+    setForm({
+      activity: entry.activity_name || "",
+      purpose: entry.purpose || "",
+      coordinator: entry.coordinator_name || "",
+      funds: entry.funds_utilized || "",
+      students: entry.students_engaged?.toString() || "",
+      department: entry.department || "",
+      file: null
+    });
   };
 
   return (
     <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 space-y-8">
       <div className="bg-white rounded-3xl shadow-xl border border-gray-100 overflow-hidden">
         <div className="bg-[#B23B25] px-8 py-5 flex justify-between items-center">
-          <h3 className="text-white font-bold text-xl">New Student Support Activity</h3>
+          <h3 className="text-white font-bold text-xl">{editingId ? 'Edit Activity' : 'New Student Support Activity'}</h3>
+          {editingId && (
+            <button 
+              onClick={() => { setEditingId(null); setForm({ activity: "", purpose: "", coordinator: "", funds: "", students: "", department: "" , file: null }); }}
+              className="text-white/80 hover:text-white text-sm font-bold flex items-center gap-1"
+            >
+              <span className="material-symbols-outlined text-sm">close</span>
+              CANCEL
+            </button>
+          )}
         </div>
         <form onSubmit={handleSubmit} className="p-8 grid grid-cols-1 md:grid-cols-2 gap-6">
-          <FormField label="Name of Activity" value={form.activity} onChange={(v: string) => setForm({...form, activity: v})} />
-          <FormField label="Purpose" value={form.purpose} onChange={(v: string) => setForm({...form, purpose: v})} />
-          <FormField label="Programme Coordinator" value={form.coordinator} onChange={(v: string) => setForm({...form, coordinator: v})} />
-          <FormField label="Funds Utilized" value={form.funds} onChange={(v: string) => setForm({...form, funds: v})} />
-          <FormField label="Students Engaged" type="number" value={form.students} onChange={(v: string) => setForm({...form, students: v})} />
-          <SubmitButton saving={saving} />
+          <SelectField label="Department" value={form.department} onChange={(v) => setForm({ ...form, department: v })} options={DEPARTMENTS} />
+          <FormField label="Name of Activity" value={form.activity} onChange={(v) => setForm({ ...form, activity: v })} />
+          <FormField label="Purpose" value={form.purpose} onChange={(v) => setForm({ ...form, purpose: v })} />
+          <FormField label="Programme Coordinator" value={form.coordinator} onChange={(v) => setForm({ ...form, coordinator: v })} />
+          <FormField label="Funds Utilized" value={form.funds} onChange={(v) => setForm({ ...form, funds: v })} />
+          <FormField label="Students Engaged" type="number" value={form.students} onChange={(v) => setForm({ ...form, students: v })} />
+          <div className="md:col-span-2">
+            <FileUpload label={editingId ? "Replace Related Files (Optional)" : "Upload Related Files (Image/PDF - Max 5MB)"} onChange={(f) => setForm({ ...form, file: f })} />
+          </div>
+          <SubmitButton saving={saving} label={editingId ? 'Update Record' : 'Add Record to Dashboard'} />
         </form>
       </div>
 
-      <Table 
-        headers={["Activity Name", "Purpose", "Coordinator", "Funds", "Students"]}
-        data={entries.map((e: any) => [e.activity_name, e.purpose, e.coordinator_name, e.funds_utilized, e.students_engaged])}
-      />
+      <div className="bg-white rounded-3xl shadow-xl border border-gray-100 overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full text-left border-collapse">
+            <thead>
+              <tr className="bg-gray-50 border-b border-gray-200">
+                {["Activity Name", "Department", "Files", "Coordinator", "Funds", "Students", "Actions"].map((h) => (
+                  <th key={h} className="px-6 py-5 text-xs font-black text-gray-400 uppercase tracking-widest">{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-100">
+              {entries.map((e: any) => (
+                <tr key={e.id} className="hover:bg-gray-50 transition-colors">
+                  {editingId === e.id ? (
+                    <td colSpan={7} className="p-0">
+                      <div className="bg-blue-50/50 p-6 grid grid-cols-1 md:grid-cols-3 gap-4 animate-in fade-in zoom-in-95 duration-200">
+                        <div className="md:col-span-3 flex justify-between items-center mb-2">
+                          <span className="text-blue-600 font-bold text-sm flex items-center gap-1">
+                            <span className="material-symbols-outlined text-sm">edit</span> EDITING RECORD
+                          </span>
+                          <button onClick={() => setEditingId(null)} className="text-gray-400 hover:text-gray-600">
+                            <span className="material-symbols-outlined">close</span>
+                          </button>
+                        </div>
+                        <SelectField label="Department" value={form.department} onChange={(v: any) => setForm({ ...form, department: v })} options={DEPARTMENTS} />
+                        <FormField label="Activity Name" value={form.activity} onChange={(v: any) => setForm({ ...form, activity: v })} />
+                        <FormField label="Coordinator" value={form.coordinator} onChange={(v: any) => setForm({ ...form, coordinator: v })} />
+                        <FormField label="Funds" value={form.funds} onChange={(v: any) => setForm({ ...form, funds: v })} />
+                        <FormField label="Students" type="number" value={form.students} onChange={(v: any) => setForm({ ...form, students: v })} />
+                        <div className="md:col-span-2">
+                          <FileUpload label="Change File (Optional)" onChange={(f) => setForm({ ...form, file: f })} />
+                        </div>
+                        <div className="flex items-end pb-1">
+                          <button 
+                            disabled={saving}
+                            onClick={handleSubmit}
+                            className="w-full bg-[#B23B25] text-white py-4 rounded-xl font-bold shadow-lg hover:bg-[#800000] transition-all"
+                          >
+                            {saving ? 'Saving...' : 'SAVE CHANGES'}
+                          </button>
+                        </div>
+                      </div>
+                    </td>
+                  ) : (
+                    <>
+                      <td className="px-6 py-5 text-sm font-bold text-gray-900">{e.activity_name}</td>
+                      <td className="px-6 py-5 text-sm text-gray-600">{e.department || '-'}</td>
+                      <td className="px-6 py-5 text-sm">
+                        {e.evidence_url ? (
+                          <a href={e.evidence_url} target="_blank" className="text-[#B23B25] hover:underline font-bold flex items-center gap-1">
+                            <span className="material-symbols-outlined text-sm">link</span> VIEW
+                          </a>
+                        ) : <span className="text-gray-300">NONE</span>}
+                      </td>
+                      <td className="px-6 py-5 text-sm text-gray-600">{e.coordinator_name}</td>
+                      <td className="px-6 py-5 text-sm text-gray-600">{e.funds_utilized}</td>
+                      <td className="px-6 py-5 text-sm text-gray-600">{e.students_engaged}</td>
+                      <td className="px-6 py-5">
+                        <button onClick={() => handleEdit(e)} className="p-2 rounded-lg hover:bg-gray-100 text-[#B23B25] transition-colors">
+                          <span className="material-symbols-outlined">edit</span>
+                        </button>
+                      </td>
+                    </>
+                  )}
+                </tr>
+              ))}
+              {entries.length === 0 && (
+                <tr><td colSpan={7} className="px-6 py-20 text-center text-gray-400 italic">No records found.</td></tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function FileUpload({ label, onChange }: { label: string, onChange: (file: File | null) => void }) {
+  const [fileName, setFileName] = useState("");
+  const [error, setError] = useState("");
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0] || null;
+    setError("");
+    
+    if (file) {
+      if (file.size > 5 * 1024 * 1024) {
+        setError("File size exceeds 5MB limit!");
+        setFileName("");
+        onChange(null);
+        return;
+      }
+      setFileName(file.name);
+      onChange(file);
+    } else {
+      setFileName("");
+      onChange(null);
+    }
+  };
+
+  return (
+    <div className="space-y-2">
+      <label className="block text-sm font-bold text-gray-700">{label}</label>
+      <div className={`relative border-2 border-dashed rounded-2xl p-6 transition-all ${error ? 'border-red-300 bg-red-50' : 'border-gray-200 hover:border-[#B23B25] hover:bg-gray-50'}`}>
+        <input
+          type="file"
+          className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+          onChange={handleFileChange}
+          accept="image/*,.pdf"
+        />
+        <div className="flex flex-col items-center justify-center space-y-2">
+          <span className="material-symbols-outlined text-gray-400 text-4xl">
+            {fileName ? 'task_alt' : 'cloud_upload'}
+          </span>
+          <p className="text-sm font-medium text-gray-500">
+            {fileName ? <span className="text-[#B23B25]">{fileName}</span> : 'Click or drag to upload file'}
+          </p>
+          {error && <p className="text-xs text-red-500 font-bold">{error}</p>}
+        </div>
+      </div>
     </div>
   );
 }
 
 // --- REUSABLE COMPONENTS ---
 
-function FormField({ label, type = "text", value, onChange, placeholder }: { label: string, type?: string, value: string, onChange: (v: string) => void, placeholder?: string }) {
+function FormField({ label, type = "text", value, onChange, placeholder }: any) {
   return (
     <div className="space-y-2">
       <label className="block text-sm font-bold text-gray-700">{label}</label>
-      <input 
+      <input
         required
         type={type}
         placeholder={placeholder || `Enter ${label.toLowerCase()}...`}
@@ -278,74 +819,36 @@ function FormField({ label, type = "text", value, onChange, placeholder }: { lab
   );
 }
 
-function SubmitButton({ saving }: { saving: boolean }) {
+function SelectField({ label, value, onChange, options }: any) {
+  return (
+    <div className="space-y-2">
+      <label className="block text-sm font-bold text-gray-700">{label}</label>
+      <select
+        required
+        className="w-full px-5 py-4 rounded-2xl border border-gray-200 focus:ring-2 focus:ring-[#B23B25] focus:border-transparent outline-none transition-all shadow-sm hover:border-gray-300 bg-white"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+      >
+        <option value="">Select {label}...</option>
+        {options.map((opt: string) => (
+          <option key={opt} value={opt}>{opt}</option>
+        ))}
+      </select>
+    </div>
+  );
+}
+
+function SubmitButton({ saving, label }: { saving: boolean, label?: string }) {
   return (
     <div className="md:col-span-2 pt-4">
-      <button 
+      <button
         disabled={saving}
         type="submit"
         className={`w-full ${saving ? 'bg-gray-400' : 'bg-[#B23B25] hover:bg-[#800000]'} text-white py-5 rounded-2xl font-bold text-xl shadow-xl shadow-[#B23B25]/20 transition-all transform hover:-translate-y-1 active:scale-95`}
       >
-        {saving ? 'Saving...' : 'Add Record to Dashboard'}
+        {saving ? 'Saving...' : (label || 'Add Record to Dashboard')}
       </button>
     </div>
   );
 }
 
-function Table({ headers, data }: { headers: string[], data: any[][] }) {
-  return (
-    <div className="bg-white rounded-3xl shadow-xl border border-gray-100 overflow-hidden">
-      <div className="overflow-x-auto">
-        {/* Mobile Card View */}
-        <div className="block md:hidden divide-y divide-gray-100">
-          {data.map((row: any[], i: number) => (
-            <div key={i} className="p-6 hover:bg-[#FFF9E6]/30 transition-colors flex flex-col gap-3">
-              {row.map((cell: any, j: number) => (
-                <div key={j} className="flex flex-col gap-1">
-                  <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">{headers[j]}</span>
-                  <span className={`text-sm ${j === 0 ? 'font-bold text-gray-900' : 'text-gray-600'}`}>
-                    {cell === null || cell === "" ? '-' : cell.toString()}
-                  </span>
-                </div>
-              ))}
-            </div>
-          ))}
-          {data.length === 0 && (
-            <div className="p-12 text-center text-gray-400 font-medium italic">
-              No records found. Fill the form above to add your first entry.
-            </div>
-          )}
-        </div>
-
-        {/* Desktop Table View */}
-        <table className="w-full text-left border-collapse hidden md:table">
-          <thead>
-            <tr className="bg-gray-50 border-b border-gray-200">
-              {headers.map((h: string) => (
-                <th key={h} className="px-8 py-5 text-xs font-black text-gray-400 uppercase tracking-[0.2em]">{h}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-100">
-            {data.map((row: any[], i: number) => (
-              <tr key={i} className="hover:bg-[#FFF9E6]/30 transition-colors">
-                {row.map((cell: any, j: number) => (
-                  <td key={j} className={`px-8 py-6 text-sm ${j === 0 ? 'font-bold text-gray-900' : 'text-gray-600'}`}>
-                    {cell === null ? '-' : cell.toString()}
-                  </td>
-                ))}
-              </tr>
-            ))}
-            {data.length === 0 && (
-              <tr>
-                <td colSpan={headers.length} className="px-8 py-20 text-center text-gray-400 font-medium italic">
-                  No records found. Fill the form above to add your first entry.
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  );
-}
