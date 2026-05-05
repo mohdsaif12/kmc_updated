@@ -256,18 +256,18 @@ function OrganizedModule({ entries, onRefresh, initialEditId }: any) {
           )}
         </div>
         <form onSubmit={handleSubmit} className="p-8 grid grid-cols-1 md:grid-cols-2 gap-6">
-          <SelectField label="Department" value={form.department} onChange={(v) => setForm({ ...form, department: v })} options={DEPARTMENTS} />
-          <FormField label="Convener / Coordinator" value={form.convener} onChange={(v) => setForm({ ...form, convener: v })} />
-          <FormField label="Programme Title" value={form.title} onChange={(v) => setForm({ ...form, title: v })} />
-          <FormField label="Sponsoring Agency & Funds" value={form.agency} onChange={(v) => setForm({ ...form, agency: v })} />
+          <SelectField label="Department" value={form.department} onChange={(v: string) => setForm({ ...form, department: v })} options={DEPARTMENTS} />
+          <FormField label="Convener / Coordinator" value={form.convener} onChange={(v: string) => setForm({ ...form, convener: v })} />
+          <FormField label="Programme Title" value={form.title} onChange={(v: string) => setForm({ ...form, title: v })} />
+          <FormField label="Sponsoring Agency & Funds" value={form.agency} onChange={(v: string) => setForm({ ...form, agency: v })} />
           <div className="grid grid-cols-2 gap-4">
-            <FormField label="Start Date" type="date" value={form.startDate} onChange={(v) => setForm({ ...form, startDate: v })} />
-            <FormField label="End Date" type="date" value={form.endDate} onChange={(v) => setForm({ ...form, endDate: v })} />
+            <FormField label="Start Date" type="date" value={form.startDate} onChange={(v: string) => setForm({ ...form, startDate: v })} />
+            <FormField label="End Date" type="date" value={form.endDate} onChange={(v: string) => setForm({ ...form, endDate: v })} />
           </div>
-          <FormField label="Participants" type="number" value={form.participants} onChange={(v) => setForm({ ...form, participants: v })} />
-          <FormField label="Themes (SDG / AI)" value={form.theme} onChange={(v) => setForm({ ...form, theme: v })} />
+          <FormField label="Participants" type="number" value={form.participants} onChange={(v: string) => setForm({ ...form, participants: v })} />
+          <FormField label="Themes (SDG / AI)" value={form.theme} onChange={(v: string) => setForm({ ...form, theme: v })} />
           <div className="md:col-span-2">
-            <FileUpload label={editingId ? "Replace Related Files (Optional)" : "Upload Related Files (Image/PDF - Max 5MB)"} onChange={(f) => setForm({ ...form, file: f })} />
+            <FileUpload label={editingId ? "Replace Related Files (Optional)" : "Upload Related Files (Image/PDF - Max 5MB)"} onChange={(f: File | null) => setForm({ ...form, file: f })} />
           </div>
           <SubmitButton saving={saving} label={editingId ? 'Update Record' : 'Add Record to Dashboard'} />
         </form>
@@ -304,7 +304,7 @@ function OrganizedModule({ entries, onRefresh, initialEditId }: any) {
                         <FormField label="Start" type="date" value={form.startDate} onChange={(v: any) => setForm({ ...form, startDate: v })} />
                         <FormField label="End" type="date" value={form.endDate} onChange={(v: any) => setForm({ ...form, endDate: v })} />
                         <div className="md:col-span-2">
-                          <FileUpload label="Change File (Optional)" onChange={(f) => setForm({ ...form, file: f })} />
+                          <FileUpload label="Change File (Optional)" onChange={(f: File | null) => setForm({ ...form, file: f })} />
                         </div>
                         <div className="flex items-end pb-1">
                           <button 
@@ -461,16 +461,16 @@ function AttendedModule({ entries, onRefresh, initialEditId }: any) {
           )}
         </div>
         <form onSubmit={handleSubmit} className="p-8 grid grid-cols-1 md:grid-cols-2 gap-6">
-          <SelectField label="Department" value={form.department} onChange={(v) => setForm({ ...form, department: v })} options={DEPARTMENTS} />
-          <FormField label="Name of Teacher" value={form.teacher} onChange={(v) => setForm({ ...form, teacher: v })} />
-          <FormField label="Title of Programme" value={form.title} onChange={(v) => setForm({ ...form, title: v })} />
-          <FormField label="Organizing Institution" value={form.institution} onChange={(v) => setForm({ ...form, institution: v })} />
+          <SelectField label="Department" value={form.department} onChange={(v: string) => setForm({ ...form, department: v })} options={DEPARTMENTS} />
+          <FormField label="Name of Teacher" value={form.teacher} onChange={(v: string) => setForm({ ...form, teacher: v })} />
+          <FormField label="Title of Programme" value={form.title} onChange={(v: string) => setForm({ ...form, title: v })} />
+          <FormField label="Organizing Institution" value={form.institution} onChange={(v: string) => setForm({ ...form, institution: v })} />
           <div className="grid grid-cols-2 gap-4">
-            <FormField label="Start Date" type="date" value={form.startDate} onChange={(v) => setForm({ ...form, startDate: v })} />
-            <FormField label="End Date" type="date" value={form.endDate} onChange={(v) => setForm({ ...form, endDate: v })} />
+            <FormField label="Start Date" type="date" value={form.startDate} onChange={(v: string) => setForm({ ...form, startDate: v })} />
+            <FormField label="End Date" type="date" value={form.endDate} onChange={(v: string) => setForm({ ...form, endDate: v })} />
           </div>
           <div className="md:col-span-2">
-            <FileUpload label={editingId ? "Replace Related Files (Optional)" : "Upload Related Files (Image/PDF - Max 5MB)"} onChange={(f) => setForm({ ...form, file: f })} />
+            <FileUpload label={editingId ? "Replace Related Files (Optional)" : "Upload Related Files (Image/PDF - Max 5MB)"} onChange={(f: File | null) => setForm({ ...form, file: f })} />
           </div>
           <SubmitButton saving={saving} label={editingId ? 'Update Record' : 'Add Record to Dashboard'} />
         </form>
@@ -507,7 +507,7 @@ function AttendedModule({ entries, onRefresh, initialEditId }: any) {
                         <FormField label="Start" type="date" value={form.startDate} onChange={(v: any) => setForm({ ...form, startDate: v })} />
                         <FormField label="End" type="date" value={form.endDate} onChange={(v: any) => setForm({ ...form, endDate: v })} />
                         <div className="md:col-span-2">
-                          <FileUpload label="Change File (Optional)" onChange={(f) => setForm({ ...form, file: f })} />
+                          <FileUpload label="Change File (Optional)" onChange={(f: File | null) => setForm({ ...form, file: f })} />
                         </div>
                         <div className="flex items-end pb-1">
                           <button 
@@ -664,14 +664,14 @@ function SupportModule({ entries, onRefresh, initialEditId }: any) {
           )}
         </div>
         <form onSubmit={handleSubmit} className="p-8 grid grid-cols-1 md:grid-cols-2 gap-6">
-          <SelectField label="Department" value={form.department} onChange={(v) => setForm({ ...form, department: v })} options={DEPARTMENTS} />
-          <FormField label="Name of Activity" value={form.activity} onChange={(v) => setForm({ ...form, activity: v })} />
-          <FormField label="Purpose" value={form.purpose} onChange={(v) => setForm({ ...form, purpose: v })} />
-          <FormField label="Programme Coordinator" value={form.coordinator} onChange={(v) => setForm({ ...form, coordinator: v })} />
-          <FormField label="Funds Utilized" value={form.funds} onChange={(v) => setForm({ ...form, funds: v })} />
-          <FormField label="Students Engaged" type="number" value={form.students} onChange={(v) => setForm({ ...form, students: v })} />
+          <SelectField label="Department" value={form.department} onChange={(v: string) => setForm({ ...form, department: v })} options={DEPARTMENTS} />
+          <FormField label="Name of Activity" value={form.activity} onChange={(v: string) => setForm({ ...form, activity: v })} />
+          <FormField label="Purpose" value={form.purpose} onChange={(v: string) => setForm({ ...form, purpose: v })} />
+          <FormField label="Programme Coordinator" value={form.coordinator} onChange={(v: string) => setForm({ ...form, coordinator: v })} />
+          <FormField label="Funds Utilized" value={form.funds} onChange={(v: string) => setForm({ ...form, funds: v })} />
+          <FormField label="Students Engaged" type="number" value={form.students} onChange={(v: string) => setForm({ ...form, students: v })} />
           <div className="md:col-span-2">
-            <FileUpload label={editingId ? "Replace Related Files (Optional)" : "Upload Related Files (Image/PDF - Max 5MB)"} onChange={(f) => setForm({ ...form, file: f })} />
+            <FileUpload label={editingId ? "Replace Related Files (Optional)" : "Upload Related Files (Image/PDF - Max 5MB)"} onChange={(f: File | null) => setForm({ ...form, file: f })} />
           </div>
           <SubmitButton saving={saving} label={editingId ? 'Update Record' : 'Add Record to Dashboard'} />
         </form>
@@ -707,7 +707,7 @@ function SupportModule({ entries, onRefresh, initialEditId }: any) {
                         <FormField label="Funds" value={form.funds} onChange={(v: any) => setForm({ ...form, funds: v })} />
                         <FormField label="Students" type="number" value={form.students} onChange={(v: any) => setForm({ ...form, students: v })} />
                         <div className="md:col-span-2">
-                          <FileUpload label="Change File (Optional)" onChange={(f) => setForm({ ...form, file: f })} />
+                          <FileUpload label="Change File (Optional)" onChange={(f: File | null) => setForm({ ...form, file: f })} />
                         </div>
                         <div className="flex items-end pb-1">
                           <button 
@@ -851,5 +851,7 @@ function SubmitButton({ saving, label }: { saving: boolean, label?: string }) {
     </div>
   );
 }
+
+
 
 
