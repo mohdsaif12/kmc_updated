@@ -169,7 +169,7 @@ function OrganizedModule({ entries, onRefresh, initialEditId }: any) {
     setSaving(true);
 
     try {
-      let fileUrl = form.file ? "" : (entries.find((e: any) => e.id === editingId)?.evidence_url || "");
+      let fileUrl = form.file ? "" : (entries.filter((item: any) => item.id === editingId)[0]?.evidence_url || "");
       
       if (form.file) {
         const fileName = `${Date.now()}-${form.file.name}`;
@@ -378,7 +378,7 @@ function AttendedModule({ entries, onRefresh, initialEditId }: any) {
     e.preventDefault();
     setSaving(true);
     try {
-      let fileUrl = form.file ? "" : (entries.find((e: any) => e.id === editingId)?.evidence_url || "");
+      let fileUrl = form.file ? "" : (entries.filter((item: any) => item.id === editingId)[0]?.evidence_url || "");
       
       if (form.file) {
         const fileName = `${Date.now()}-${form.file.name}`;
@@ -581,7 +581,7 @@ function SupportModule({ entries, onRefresh, initialEditId }: any) {
     e.preventDefault();
     setSaving(true);
     try {
-      let fileUrl = form.file ? "" : (entries.find((e: any) => e.id === editingId)?.evidence_url || "");
+      let fileUrl = form.file ? "" : (entries.filter((item: any) => item.id === editingId)[0]?.evidence_url || "");
       
       if (form.file) {
         const fileName = `${Date.now()}-${form.file.name}`;
@@ -851,4 +851,5 @@ function SubmitButton({ saving, label }: { saving: boolean, label?: string }) {
     </div>
   );
 }
+
 
