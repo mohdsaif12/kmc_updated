@@ -29,11 +29,11 @@ function ActivitiesContent() {
   const [loading, setLoading] = useState(false);
 
   // State for Organized
-  const [organizedEntries, setOrganizedEntries] = useState<any[]>([]);
+  const [organizedEntries, setOrganizedEntries] = useState<Record<string, unknown>[]>([]);
   // State for Attended
-  const [attendedEntries, setAttendedEntries] = useState<any[]>([]);
+  const [attendedEntries, setAttendedEntries] = useState<Record<string, unknown>[]>([]);
   // State for Student Support
-  const [supportEntries, setSupportEntries] = useState<any[]>([]);
+  const [supportEntries, setSupportEntries] = useState<Record<string, unknown>[]>([]);
 
   const [error, setError] = useState<string | null>(null);
 
@@ -58,9 +58,9 @@ function ActivitiesContent() {
       if (organized) setOrganizedEntries(organized);
       if (attended) setAttendedEntries(attended);
       if (support) setSupportEntries(support);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Supabase Fetch Error:", err);
-      setError(err.message);
+      setError(err instanceof Error ? err.message : String(err));
     } finally {
       setLoading(false);
     }
@@ -142,7 +142,7 @@ export default function ActivitiesPage() {
 }
 
 // --- MODULE 1: ORGANIZED ---
-function OrganizedModule({ entries, onRefresh, initialEditId }: any) {
+function OrganizedModule({ entries, onRefresh, initialEditId }: { entries: Record<string, unknown>[]; onRefresh: () => void; initialEditId: string | null }) {
   const [form, setForm] = useState({ 
     convener: "", 
     title: "", 
@@ -164,7 +164,7 @@ function OrganizedModule({ entries, onRefresh, initialEditId }: any) {
     }
   }, [initialEditId, entries]);
 
-  const handleSubmit = async (e: any) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSaving(true);
 
@@ -218,24 +218,24 @@ function OrganizedModule({ entries, onRefresh, initialEditId }: any) {
       setEditingId(null);
       onRefresh();
       alert(editingId ? "Successfully updated!" : "Successfully saved!");
-    } catch (err: any) {
-      alert("Error: " + err.message);
+    } catch (err: unknown) {
+      alert("Error: " + (err instanceof Error ? err.message : String(err)));
     } finally {
       setSaving(false);
     }
   };
 
-  const handleEdit = (entry: any) => {
-    setEditingId(entry.id);
+  const handleEdit = (entry: Record<string, unknown>) => {
+    setEditingId(entry.id as string);
     setForm({
-      convener: entry.convener_name || "",
-      title: entry.program_title || "",
-      agency: entry.sponsoring_agency || "",
-      startDate: entry.start_date || "",
-      endDate: entry.end_date || "",
-      participants: entry.participants_count?.toString() || "",
-      theme: entry.theme || "",
-      department: entry.department || "",
+      convener: (entry.convener_name as string) || "",
+      title: (entry.program_title as string) || "",
+      agency: (entry.sponsoring_agency as string) || "",
+      startDate: (entry.start_date as string) || "",
+      endDate: (entry.end_date as string) || "",
+      participants: ((entry.participants_count as number)?.toString()) || "",
+      theme: (entry.theme as string) || "",
+      department: (entry.department as string) || "",
       file: null
     });
   };
@@ -297,12 +297,12 @@ function OrganizedModule({ entries, onRefresh, initialEditId }: any) {
                             <span className="material-symbols-outlined">close</span>
                           </button>
                         </div>
-                        <SelectField label="Department" value={form.department} onChange={(v: any) => setForm({ ...form, department: v })} options={DEPARTMENTS} />
-                        <FormField label="Convener" value={form.convener} onChange={(v: any) => setForm({ ...form, convener: v })} />
-                        <FormField label="Title" value={form.title} onChange={(v: any) => setForm({ ...form, title: v })} />
-                        <FormField label="Agency" value={form.agency} onChange={(v: any) => setForm({ ...form, agency: v })} />
-                        <FormField label="Start" type="date" value={form.startDate} onChange={(v: any) => setForm({ ...form, startDate: v })} />
-                        <FormField label="End" type="date" value={form.endDate} onChange={(v: any) => setForm({ ...form, endDate: v })} />
+                        <SelectField label="Department" value={form.department} onChange={(v: string) => setForm({ ...form, department: v })} options={DEPARTMENTS} />
+                        <FormField label="Convener" value={form.convener} onChange={(v: string) => setForm({ ...form, convener: v })} />
+                        <FormField label="Title" value={form.title} onChange={(v: string) => setForm({ ...form, title: v })} />
+                        <FormField label="Agency" value={form.agency} onChange={(v: string) => setForm({ ...form, agency: v })} />
+                        <FormField label="Start" type="date" value={form.startDate} onChange={(v: string) => setForm({ ...form, startDate: v })} />
+                        <FormField label="End" type="date" value={form.endDate} onChange={(v: string) => setForm({ ...form, endDate: v })} />
                         <div className="md:col-span-2">
                           <FileUpload label="Change File (Optional)" onChange={(f: File | null) => setForm({ ...form, file: f })} />
                         </div>
@@ -354,7 +354,7 @@ function OrganizedModule({ entries, onRefresh, initialEditId }: any) {
 }
 
 // --- MODULE 2: ATTENDED ---
-function AttendedModule({ entries, onRefresh, initialEditId }: any) {
+function AttendedModule({ entries, onRefresh, initialEditId }: { entries: Record<string, unknown>[]; onRefresh: () => void; initialEditId: string | null }) {
   const [form, setForm] = useState({ 
     teacher: "", 
     title: "", 
@@ -374,7 +374,7 @@ function AttendedModule({ entries, onRefresh, initialEditId }: any) {
     }
   }, [initialEditId, entries]);
 
-  const handleSubmit = async (e: any) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSaving(true);
     try {
@@ -425,22 +425,22 @@ function AttendedModule({ entries, onRefresh, initialEditId }: any) {
       setEditingId(null);
       onRefresh();
       alert(editingId ? "Successfully updated!" : "Successfully saved!");
-    } catch (err: any) {
-      alert("Error: " + err.message);
+    } catch (err: unknown) {
+      alert("Error: " + (err instanceof Error ? err.message : String(err)));
     } finally {
       setSaving(false);
     }
   };
 
-  const handleEdit = (entry: any) => {
-    setEditingId(entry.id);
+  const handleEdit = (entry: Record<string, unknown>) => {
+    setEditingId(entry.id as string);
     setForm({
-      teacher: entry.teacher_name || "",
-      title: entry.program_title || "",
-      institution: entry.organizing_institution || "",
-      startDate: entry.start_date || "",
-      endDate: entry.end_date || "",
-      department: entry.department || "",
+      teacher: (entry.teacher_name as string) || "",
+      title: (entry.program_title as string) || "",
+      institution: (entry.organizing_institution as string) || "",
+      startDate: (entry.start_date as string) || "",
+      endDate: (entry.end_date as string) || "",
+      department: (entry.department as string) || "",
       file: null
     });
   };
@@ -500,12 +500,12 @@ function AttendedModule({ entries, onRefresh, initialEditId }: any) {
                             <span className="material-symbols-outlined">close</span>
                           </button>
                         </div>
-                        <SelectField label="Department" value={form.department} onChange={(v: any) => setForm({ ...form, department: v })} options={DEPARTMENTS} />
-                        <FormField label="Teacher" value={form.teacher} onChange={(v: any) => setForm({ ...form, teacher: v })} />
-                        <FormField label="Title" value={form.title} onChange={(v: any) => setForm({ ...form, title: v })} />
-                        <FormField label="Institution" value={form.institution} onChange={(v: any) => setForm({ ...form, institution: v })} />
-                        <FormField label="Start" type="date" value={form.startDate} onChange={(v: any) => setForm({ ...form, startDate: v })} />
-                        <FormField label="End" type="date" value={form.endDate} onChange={(v: any) => setForm({ ...form, endDate: v })} />
+                        <SelectField label="Department" value={form.department} onChange={(v: string) => setForm({ ...form, department: v })} options={DEPARTMENTS} />
+                        <FormField label="Teacher" value={form.teacher} onChange={(v: string) => setForm({ ...form, teacher: v })} />
+                        <FormField label="Title" value={form.title} onChange={(v: string) => setForm({ ...form, title: v })} />
+                        <FormField label="Institution" value={form.institution} onChange={(v: string) => setForm({ ...form, institution: v })} />
+                        <FormField label="Start" type="date" value={form.startDate} onChange={(v: string) => setForm({ ...form, startDate: v })} />
+                        <FormField label="End" type="date" value={form.endDate} onChange={(v: string) => setForm({ ...form, endDate: v })} />
                         <div className="md:col-span-2">
                           <FileUpload label="Change File (Optional)" onChange={(f: File | null) => setForm({ ...form, file: f })} />
                         </div>
@@ -557,7 +557,7 @@ function AttendedModule({ entries, onRefresh, initialEditId }: any) {
 }
 
 // --- MODULE 3: STUDENT SUPPORT ---
-function SupportModule({ entries, onRefresh, initialEditId }: any) {
+function SupportModule({ entries, onRefresh, initialEditId }: { entries: Record<string, unknown>[]; onRefresh: () => void; initialEditId: string | null }) {
   const [form, setForm] = useState({ 
     activity: "", 
     purpose: "", 
@@ -577,7 +577,7 @@ function SupportModule({ entries, onRefresh, initialEditId }: any) {
     }
   }, [initialEditId, entries]);
 
-  const handleSubmit = async (e: any) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSaving(true);
     try {
@@ -628,22 +628,22 @@ function SupportModule({ entries, onRefresh, initialEditId }: any) {
       setEditingId(null);
       onRefresh();
       alert(editingId ? "Successfully updated!" : "Successfully saved!");
-    } catch (err: any) {
-      alert("Error: " + err.message);
+    } catch (err: unknown) {
+      alert("Error: " + (err instanceof Error ? err.message : String(err)));
     } finally {
       setSaving(false);
     }
   };
 
-  const handleEdit = (entry: any) => {
-    setEditingId(entry.id);
+  const handleEdit = (entry: Record<string, unknown>) => {
+    setEditingId(entry.id as string);
     setForm({
-      activity: entry.activity_name || "",
-      purpose: entry.purpose || "",
-      coordinator: entry.coordinator_name || "",
-      funds: entry.funds_utilized || "",
-      students: entry.students_engaged?.toString() || "",
-      department: entry.department || "",
+      activity: (entry.activity_name as string) || "",
+      purpose: (entry.purpose as string) || "",
+      coordinator: (entry.coordinator_name as string) || "",
+      funds: (entry.funds_utilized as string) || "",
+      students: ((entry.students_engaged as number)?.toString()) || "",
+      department: (entry.department as string) || "",
       file: null
     });
   };
@@ -701,11 +701,11 @@ function SupportModule({ entries, onRefresh, initialEditId }: any) {
                             <span className="material-symbols-outlined">close</span>
                           </button>
                         </div>
-                        <SelectField label="Department" value={form.department} onChange={(v: any) => setForm({ ...form, department: v })} options={DEPARTMENTS} />
-                        <FormField label="Activity Name" value={form.activity} onChange={(v: any) => setForm({ ...form, activity: v })} />
-                        <FormField label="Coordinator" value={form.coordinator} onChange={(v: any) => setForm({ ...form, coordinator: v })} />
-                        <FormField label="Funds" value={form.funds} onChange={(v: any) => setForm({ ...form, funds: v })} />
-                        <FormField label="Students" type="number" value={form.students} onChange={(v: any) => setForm({ ...form, students: v })} />
+                        <SelectField label="Department" value={form.department} onChange={(v: string) => setForm({ ...form, department: v })} options={DEPARTMENTS} />
+                        <FormField label="Activity Name" value={form.activity} onChange={(v: string) => setForm({ ...form, activity: v })} />
+                        <FormField label="Coordinator" value={form.coordinator} onChange={(v: string) => setForm({ ...form, coordinator: v })} />
+                        <FormField label="Funds" value={form.funds} onChange={(v: string) => setForm({ ...form, funds: v })} />
+                        <FormField label="Students" type="number" value={form.students} onChange={(v: string) => setForm({ ...form, students: v })} />
                         <div className="md:col-span-2">
                           <FileUpload label="Change File (Optional)" onChange={(f: File | null) => setForm({ ...form, file: f })} />
                         </div>
@@ -803,7 +803,15 @@ function FileUpload({ label, onChange }: { label: string, onChange: (file: File 
 
 // --- REUSABLE COMPONENTS ---
 
-function FormField({ label, type = "text", value, onChange, placeholder }: any) {
+type FormFieldProps = {
+  label: string;
+  type?: string;
+  value: string;
+  onChange: (value: string) => void;
+  placeholder?: string;
+};
+
+function FormField({ label, type = "text", value, onChange, placeholder }: FormFieldProps) {
   return (
     <div className="space-y-2">
       <label className="block text-sm font-bold text-gray-700">{label}</label>
@@ -819,7 +827,14 @@ function FormField({ label, type = "text", value, onChange, placeholder }: any) 
   );
 }
 
-function SelectField({ label, value, onChange, options }: any) {
+type SelectFieldProps = {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  options: string[];
+};
+
+function SelectField({ label, value, onChange, options }: SelectFieldProps) {
   return (
     <div className="space-y-2">
       <label className="block text-sm font-bold text-gray-700">{label}</label>
@@ -851,6 +866,12 @@ function SubmitButton({ saving, label }: { saving: boolean, label?: string }) {
     </div>
   );
 }
+
+
+
+
+
+
 
 
 
